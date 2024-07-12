@@ -1,70 +1,164 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# LatticeVisualizer
 
-## Available Scripts
+LatticeVisualizer is a React-based application for visualizing lattice points in 2D and 3D space. The application supports the generation and rendering of lattice points based on user-defined dimensions and basis vectors. Additionally, it provides functionality to shade and unshade random parallelepipeds within the lattice.
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+- **2D and 3D Visualization**: Visualize lattice points in 2D and 3D space.
+- **Dynamic Basis Vectors**: Modify the basis vectors to see how the lattice changes.
+- **Dimension Support**: Supports up to 3D visualization.
+- **Shading Parallelepiped**: Shade a random parallelepiped within the lattice.
+- **Unshading Parallelepiped**: Unshade the previously shaded parallelepiped.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Getting Started
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Prerequisites
 
-### `npm test`
+- Node.js and npm installed on your machine.
+- A modern web browser.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Installation
 
-### `npm run build`
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/yourusername/LatticeVisualizer.git
+   cd LatticeVisualizer
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+2. Install the dependencies:
+   ```sh
+   npm install
+   ```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Running the Application
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. Start the development server:
+   ```sh
+   npm start
+   ```
 
-### `npm run eject`
+2. Open your web browser and navigate to `http://localhost:3000` to see the application in action.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Usage
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Controls
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- **Dimension**: Use the input field to set the lattice dimension (2D or 3D).
+- **Sum Limit**: Set the range for the coefficients used in generating lattice points.
+- **Basis Vectors**: Modify the basis vectors to see how the lattice changes.
+- **Shade Parallelepiped**: Click the "Shade Parallelepiped" button to shade a random parallelepiped within the lattice.
+- **Unshade Parallelepiped**: Click the "Unshade Parallelepiped" button to remove the shading.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Example
 
-## Learn More
+To visualize a 2D lattice:
+1. Set the dimension to 2.
+2. Set the basis vectors to `[[1, 0], [0, 1]]`.
+3. Click "Shade Parallelepiped" to shade a random area within the lattice.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+To visualize a 3D lattice:
+1. Set the dimension to 3.
+2. Set the basis vectors to `[[1, 0, 0], [0, 1, 0], [0, 0, 1]]`.
+3. Click "Shade Parallelepiped" to shade a random area within the lattice.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Embedding in a Blog
 
-### Code Splitting
+To embed the LatticeVisualizer app in a blog that supports Markdown (`.md` file):
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Step 1: Deploy Your React App
 
-### Analyzing the Bundle Size
+1. **Create a GitHub Repository**: Create a GitHub repository for your project if you don't have one already.
+2. **Push Your Code to GitHub**: Push your local project to the GitHub repository.
+3. **Install gh-pages**: Install the `gh-pages` package to help deploy to GitHub Pages.
+   ```sh
+   npm install gh-pages --save-dev
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+4. **Update `package.json`**: Add the following lines to your `package.json` file.
+   ```json
+   "homepage": "http://{your-username}.github.io/{your-repo-name}",
+   "scripts": {
+     "predeploy": "npm run build",
+     "deploy": "gh-pages -d build"
+   }
+   ```
+   Replace `{your-username}` with your GitHub username and `{your-repo-name}` with your repository name.
 
-### Making a Progressive Web App
+5. **Deploy**: Deploy your app to GitHub Pages by running:
+   ```sh
+   npm run deploy
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+6. **Access Your App**: After deployment, you can access your app at `http://{your-username}.github.io/{your-repo-name}`.
 
-### Advanced Configuration
+### Step 2: Embed the App Using an Iframe
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Once your app is deployed, you can embed it into your Markdown file using an iframe. Here’s how you can do it:
 
-### Deployment
+```markdown
+# My Blog Post
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Here is my Lattice Visualizer app embedded:
 
-### `npm run build` fails to minify
+<iframe src="http://{your-username}.github.io/{your-repo-name}" width="1024" height="768"></iframe>
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Replace `http://{your-username}.github.io/{your-repo-name}` with the actual URL of your deployed app.
+
+### Full Example
+
+Here is a full example of how your Markdown file (`post.md`) might look:
+
+```markdown
+# Exploring Lattice Visualizations
+
+LatticeVisualizer is a React-based application for visualizing lattice points in 2D and 3D space. The application supports the generation and rendering of lattice points based on user-defined dimensions and basis vectors. Additionally, it provides functionality to shade and unshade random parallelepipeds within the lattice.
+
+## Features
+
+- **2D and 3D Visualization**: Visualize lattice points in 2D and 3D space.
+- **Dynamic Basis Vectors**: Modify the basis vectors to see how the lattice changes.
+- **Dimension Support**: Supports up to 3D visualization.
+- **Shading Parallelepiped**: Shade a random parallelepiped within the lattice.
+- **Unshading Parallelepiped**: Unshade the previously shaded parallelepiped.
+
+## Try It Out
+
+Here is my Lattice Visualizer app embedded:
+
+<iframe src="http://{your-username}.github.io/{your-repo-name}" width="1024" height="768"></iframe>
+```
+
+Replace `http://{your-username}.github.io/{your-repo-name}` with the URL of your deployed app.
+
+## Code Overview
+
+### Main Component
+
+`LatticeVisualizer.js`:
+- Handles the state and logic for dimension, basis vectors, sum limit, and shading.
+- Generates lattice points based on user inputs.
+- Renders 2D and 3D lattice visualizations using D3.js and Three.js.
+- Provides buttons to shade and unshade parallelepipeds within the lattice.
+
+### Dependencies
+
+- **React**: UI library for building the application.
+- **Three.js**: Library for 3D visualization.
+- **D3.js**: Library for 2D visualization.
+- **OrbitControls**: Three.js add-on for interactive controls.
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and submit a pull request for any feature requests, bug fixes, or improvements.
+
+## License
+
+This project is licensed under the MIT License.
+
+## Acknowledgements
+
+- [React](https://reactjs.org/)
+- [Three.js](https://threejs.org/)
+- [D3.js](https://d3js.org/)
