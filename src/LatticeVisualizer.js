@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import * as d3 from 'd3';
+import numeric from 'numeric';
 
-const MAX_POINTS = 50000; // Adjusted maximum number of points to be generated
+const MAX_POINTS = 50000;
 
 const LatticeVisualizer = () => {
   const [dimension, setDimension] = useState(2);
@@ -12,140 +13,148 @@ const LatticeVisualizer = () => {
     [0, 1]
   ]);
   const [sumLimit, setSumLimit] = useState(5);
+  const [dualBasis, setDualBasis] = useState(null);
   const [shadeParallelepiped, setShadeParallelepiped] = useState(false);
   const [parallelepipedMesh, setParallelepipedMesh] = useState(null);
-  const canvasRef = useRef(null);
+  const canvasContainerRef = useRef(null);
+  const rendererRef = useRef(new THREE.WebGLRenderer({ antialias: true }));
   const sceneRef = useRef(new THREE.Scene());
+  const cameraRef = useRef(new THREE.PerspectiveCamera(75, 1024 / 768, 0.1, 1000));
 
-  const generateLatticePoints = useMemo(() => {
+  useEffect(() => {
+    const renderer = rendererRef.current;
+    renderer.setSize(1024, 768);
+
+    const camera = cameraRef.current;
+    camera.position.z = 10;
+
+    const canvas = renderer.domElement;
+    if (canvasContainerRef.current && !canvasContainerRef.current.contains(canvas)) {
+      canvasContainerRef.current.appendChild(canvas);
+    }
+
+    const animate = () => {
+      requestAnimationFrame(animate);
+      renderer.render(sceneRef.current, camera);
+    };
+    animate();
+  }, []);
+
+  useEffect(() => {
+    if (dimension > 3) {
+      console.warn("Visualization only supports up to 3 dimensions.");
+      render3DLattice(true); // For higher dimensions, project to 3D
+    } else if (dimension === 2) {
+      render2DLattice();
+    } else if (dimension === 3) {
+      render3DLattice(false);
+    }
+  }, [dimension, basis, sumLimit, shadeParallelepiped, dualBasis]);
+
+  const generateLatticePoints = (basisMatrix) => {
     const points = [];
-
     const range = Array.from({ length: 2 * sumLimit + 1 }, (_, i) => i - sumLimit);
+    const coefficients = [];
 
-    const cartesianProduct = (...arrays) => arrays.reduce((acc, array) => acc.flatMap(x => array.map(y => [...x, y])), [[]]);
+    const stack = [[]];
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (current.length === dimension) {
+        coefficients.push(current);
+      } else {
+        for (let value of range) {
+          stack.push([...current, value]);
+        }
+      }
+    }
 
-    const coefficients = cartesianProduct(...Array(dimension).fill(range));
+    if (coefficients.length > MAX_POINTS) {
+      alert(`Too many points (${coefficients.length}). Limiting to ${MAX_POINTS} points for visualization.`);
+      coefficients.length = MAX_POINTS;
+    }
 
-    const limitedCoefficients = coefficients.slice(0, MAX_POINTS);
-
-    for (const coeff of limitedCoefficients) {
+    for (const coeff of coefficients) {
       const point = new Array(dimension).fill(0);
       for (let i = 0; i < dimension; i++) {
         for (let j = 0; j < dimension; j++) {
-          point[j] += coeff[i] * basis[i][j];
+          point[j] += coeff[i] * basisMatrix[i][j];
         }
       }
       points.push(point);
     }
 
     return points;
-  }, [dimension, basis, sumLimit]);
+  };
 
-  const projectTo3D = useMemo(() => points => {
-    return points.map(point => {
-      const [x, y, z] = point;
-      return [x || 0, y || 0, z || 0];
-    });
-  }, []);
+  const calculateDualBasis = (basisMatrix) => {
+    const basisMatrixT = numeric.transpose(basisMatrix);
+    const inverseBasisMatrixT = numeric.inv(basisMatrixT);
+    return numeric.transpose(inverseBasisMatrixT);
+  };
+
+  const points = useMemo(() => generateLatticePoints(basis), [dimension, basis, sumLimit]);
+  const dualPoints = useMemo(() => (dualBasis ? generateLatticePoints(dualBasis) : []), [dimension, dualBasis, sumLimit]);
+
+  const projectTo3D = (points) => points.map(point => [point[0] || 0, point[1] || 0, point[2] || 0]);
 
   const render2DLattice = () => {
-    const svg = d3.select(canvasRef.current);
+    const svg = d3.select(canvasContainerRef.current).select('svg');
     svg.selectAll("*").remove();
-
     const width = 1024;
     const height = 768;
     const margin = 20;
 
     svg.attr("width", width).attr("height", height);
 
-    const points = generateLatticePoints;
+    const xExtent = d3.extent(points.concat(dualPoints), d => d[0]);
+    const yExtent = d3.extent(points.concat(dualPoints), d => d[1]);
+    const xScale = d3.scaleLinear().domain([xExtent[0], xExtent[1]]).range([margin, width - margin]);
+    const yScale = d3.scaleLinear().domain([yExtent[0], yExtent[1]]).range([height - margin, margin]);
 
-    const xExtent = d3.extent(points, d => d[0]);
-    const yExtent = d3.extent(points, d => d[1]);
+    svg.selectAll("circle.original").data(points).enter().append("circle").attr("class", "original").attr("cx", d => xScale(d[0])).attr("cy", d => yScale(d[1])).attr("r", 3).attr("fill", "red");
+    svg.selectAll("circle.dual").data(dualPoints).enter().append("circle").attr("class", "dual").attr("cx", d => xScale(d[0])).attr("cy", d => yScale(d[1])).attr("r", 3).attr("fill", "blue");
 
-    const xScale = d3.scaleLinear()
-      .domain([xExtent[0], xExtent[1]])
-      .range([margin, width - margin]);
-
-    const yScale = d3.scaleLinear()
-      .domain([yExtent[0], yExtent[1]])
-      .range([height - margin, margin]);
-
-    svg.selectAll("circle")
-      .data(points)
-      .enter()
-      .append("circle")
-      .attr("cx", d => xScale(d[0]))
-      .attr("cy", d => yScale(d[1]))
-      .attr("r", 3)
-      .attr("fill", "red");
-
-    svg.append("line")
-      .attr("x1", xScale(0))
-      .attr("y1", 0)
-      .attr("x2", xScale(0))
-      .attr("y2", height)
-      .attr("stroke", "black");
-
-    svg.append("line")
-      .attr("x1", 0)
-      .attr("y1", yScale(0))
-      .attr("x2", width)
-      .attr("y2", yScale(0))
-      .attr("stroke", "black");
+    svg.append("line").attr("x1", xScale(0)).attr("y1", 0).attr("x2", xScale(0)).attr("y2", height).attr("stroke", "black");
+    svg.append("line").attr("x1", 0).attr("y1", yScale(0)).attr("x2", width).attr("y2", yScale(0)).attr("stroke", "black");
   };
 
   const render3DLattice = (isProjected) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
     const scene = sceneRef.current;
-    scene.clear(); 
+    scene.clear();
 
-    const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ canvas });
+    const camera = cameraRef.current;
+    const renderer = rendererRef.current;
 
-    renderer.setSize(1024, 768);
-
-    let points = generateLatticePoints;
+    let renderPoints = points;
+    let renderDualPoints = dualPoints;
     if (isProjected) {
-      points = projectTo3D(points);
+      renderPoints = projectTo3D(points);
+      renderDualPoints = projectTo3D(dualPoints);
     }
 
     const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(points.flat());
+    const positions = new Float32Array(renderPoints.flat());
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
+    const dualGeometry = new THREE.BufferGeometry();
+    const dualPositions = new Float32Array(renderDualPoints.flat());
+    dualGeometry.setAttribute('position', new THREE.BufferAttribute(dualPositions, 3));
+
     const material = new THREE.PointsMaterial({ color: 0xff0000, size: 0.1 });
+    const dualMaterial = new THREE.PointsMaterial({ color: 0x0000ff, size: 0.1 });
+
     const pointCloud = new THREE.Points(geometry, material);
+    const dualPointCloud = new THREE.Points(dualGeometry, dualMaterial);
+
     scene.add(pointCloud);
+    scene.add(dualPointCloud);
 
     const axesHelper = new THREE.AxesHelper(5);
     scene.add(axesHelper);
 
-    camera.position.z = 10;
-
     const controls = new OrbitControls(camera, renderer.domElement);
-
-    const animate = () => {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    };
-
-    animate();
+    controls.update();
   };
-
-  useEffect(() => {
-    if (dimension > 3) {
-      console.warn("Visualization only supports up to 3 dimensions.");
-      render3DLattice(true); 
-    } else if (dimension === 2) {
-      render2DLattice();
-    } else if (dimension === 3) {
-      render3DLattice(false);
-    }
-  }, [dimension, basis, sumLimit, shadeParallelepiped, generateLatticePoints]);
 
   const shadeRandomParallelepiped = () => {
     const scene = sceneRef.current;
@@ -166,7 +175,7 @@ const LatticeVisualizer = () => {
           }
         }
       }
-      parallelepipedVertices.push(...vertex.slice(0, 3)); 
+      parallelepipedVertices.push(...vertex.slice(0, 3)); // Use the first three dimensions
     }
 
     const parallelepipedGeometry = new THREE.BufferGeometry();
@@ -188,16 +197,12 @@ const LatticeVisualizer = () => {
   };
 
   const initializeBasis = (dim) => {
-    const newBasis = Array.from({ length: dim }, (_, i) => (
-      Array.from({ length: dim }, (_, j) => (i === j ? 1 : 0))
-    ));
+    const newBasis = Array.from({ length: dim }, (_, i) => Array.from({ length: dim }, (_, j) => (i === j ? 1 : 0)));
     setBasis(newBasis);
   };
 
   const handleBasisChange = (i, j, value) => {
-    const newBasis = basis.map((row, rowIndex) => (
-      row.map((col, colIndex) => (rowIndex === i && colIndex === j ? parseFloat(value) : col))
-    ));
+    const newBasis = basis.map((row, rowIndex) => row.map((col, colIndex) => (rowIndex === i && colIndex === j ? parseFloat(value) : col)));
     setBasis(newBasis);
   };
 
@@ -213,6 +218,11 @@ const LatticeVisualizer = () => {
       setParallelepipedMesh(null);
       setShadeParallelepiped(false);
     }
+  };
+
+  const handleDualBasis = () => {
+    const calculatedDualBasis = calculateDualBasis(basis);
+    setDualBasis(calculatedDualBasis);
   };
 
   return (
@@ -234,38 +244,24 @@ const LatticeVisualizer = () => {
         {basis.map((vector, i) => (
           <div key={i}>
             {vector.map((value, j) => (
-              <input
-                key={j}
-                type="number"
-                value={value}
-                onChange={(e) => handleBasisChange(i, j, e.target.value)}
-                style={{ width: '50px', marginRight: '5px' }}
-              />
+              <input key={j} type="number" value={value} onChange={(e) => handleBasisChange(i, j, e.target.value)} style={{ width: '50px', marginRight: '5px' }} />
             ))}
           </div>
         ))}
       </div>
       <button onClick={handleShadeParallelepiped}>Shade Parallelepiped</button>
       <button onClick={handleUnshadeParallelepiped}>Unshade Parallelepiped</button>
-      {dimension <= 3 && (
-        <div style={{ width: '1024px', height: '768px' }}>
-          {dimension === 2 ? (
-            <svg ref={canvasRef}></svg>
-          ) : (
-            <canvas ref={canvasRef}></canvas>
-          )}
-        </div>
-      )}
-      {dimension > 3 && (
-        <div style={{ width: '1024px', height: '768px' }}>
-          <canvas ref={canvasRef}></canvas>
-        </div>
-      )}
+      <button onClick={handleDualBasis}>Dual</button>
+      <div style={{ width: '1024px', height: '768px' }} ref={canvasContainerRef}>
+        {dimension === 2 && <svg></svg>}
+        {dimension > 2 && <canvas></canvas>}
+      </div>
     </div>
   );
 };
 
 export default LatticeVisualizer;
+
 
 
 
