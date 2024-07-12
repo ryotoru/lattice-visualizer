@@ -1,7 +1,7 @@
 
 # LatticeVisualizer
 
-LatticeVisualizer is a React-based application for visualizing lattice points in 2D and 3D space. The application supports the generation and rendering of lattice points based on user-defined dimensions and basis vectors. Additionally, it provides functionality to shade and unshade random parallelepipeds within the lattice.
+LatticeVisualizer is a React-based application for visualizing lattice points in 2D and 3D space. I created this project to visualize lattices while studying lattice-based cryptography independently.
 
 ## Features
 
@@ -63,7 +63,7 @@ To visualize a 3D lattice:
 
 ## See It in Action
 
-You can see it in action on my blog: [CryptiCosmos]<https://ryotoru.github.io/blog/2024/math/>
+You can see it in action on my blog: [CryptiCosmos](https://ryotoru.github.io/blog/2024/math/)
 
 ## Code Overview
 
