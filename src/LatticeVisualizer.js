@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import * as d3 from 'd3';
 import numeric from 'numeric';
 
-const MAX_POINTS = 5000000;
+const MAX_POINTS = 500000000;
 
 const LatticeVisualizer = () => {
   const [dimension, setDimension] = useState(2);
@@ -340,18 +340,3 @@ const LatticeVisualizer = () => {
 };
 
 export default LatticeVisualizer;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
