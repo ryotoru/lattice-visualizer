@@ -21,6 +21,7 @@ const LatticeVisualizer = () => {
   const [shadeParallelepiped, setShadeParallelepiped] = useState(false);
   const [parallelepipedMesh, setParallelepipedMesh] = useState(null);
   const [axesVisible, setAxesVisible] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const canvasContainerRef = useRef(null);
   const rendererRef = useRef(new THREE.WebGLRenderer({ antialias: true }));
   const sceneRef = useRef(new THREE.Scene());
@@ -71,7 +72,7 @@ const LatticeVisualizer = () => {
       render3DLattice(false);
     }
     updateAxesVisibility();
-  }, [dimension, basis, sumLimit, shadeParallelepiped, dualBasis, axesVisible]);
+  }, [dimension, basis, sumLimit, shadeParallelepiped, dualBasis, axesVisible, isFullscreen]);
 
   const updateAxesVisibility = () => {
     if (axesHelperRef.current && gridHelperRef.current) {
@@ -147,8 +148,8 @@ const LatticeVisualizer = () => {
   const render2DLattice = () => {
     const svg = d3.select(canvasContainerRef.current).select('svg');
     svg.selectAll("*").remove();
-    const width = 1280;
-    const height = 1024;
+    const width = isFullscreen ? window.innerWidth : 1280;
+    const height = isFullscreen ? window.innerHeight : 1024;
     const margin = 20;
 
     svg.attr("width", width).attr("height", height);
@@ -301,6 +302,49 @@ const LatticeVisualizer = () => {
     setAxesVisible(!axesVisible);
   };
 
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      if (canvasContainerRef.current.requestFullscreen) {
+        canvasContainerRef.current.requestFullscreen();
+      } else if (canvasContainerRef.current.mozRequestFullScreen) { // Firefox
+        canvasContainerRef.current.mozRequestFullScreen();
+      } else if (canvasContainerRef.current.webkitRequestFullscreen) { // Chrome, Safari and Opera
+        canvasContainerRef.current.webkitRequestFullscreen();
+      } else if (canvasContainerRef.current.msRequestFullscreen) { // IE/Edge
+        canvasContainerRef.current.msRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.mozCancelFullScreen) { // Firefox
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) { // IE/Edge
+        document.msExitFullscreen();
+      }
+    }
+    setIsFullscreen(!isFullscreen);
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
   return (
     <div>
       <div>
@@ -331,12 +375,20 @@ const LatticeVisualizer = () => {
       <button onClick={handleShowOriginal}>Show Original</button>
       <button onClick={handleReturnToZeroView}>Return to Zero View</button>
       <button onClick={handleToggleAxes}>{axesVisible ? 'Hide Axes' : 'Show Axes'}</button>
-      <div style={{ width: '1280px', height: '1024px' }} ref={canvasContainerRef}>
-      {dimension === 2 && <svg></svg>}
-      {dimension > 2 && <canvas></canvas>}
+      <button onClick={toggleFullscreen}>{isFullscreen ? 'Exit Fullscreen' : 'Go Fullscreen'}</button>
+      <div 
+        style={{ 
+          width: isFullscreen ? '100vw' : '1280px', 
+          height: isFullscreen ? '100vh' : '1024px' 
+        }} 
+        ref={canvasContainerRef}
+      >
+        {dimension === 2 && <svg></svg>}
+        {dimension > 2 && <canvas></canvas>}
       </div>
     </div>
   );
 };
 
 export default LatticeVisualizer;
+

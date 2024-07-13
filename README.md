@@ -13,7 +13,7 @@ LatticeVisualizer is a React-based application for visualizing lattice points in
 
 ## Getting Started
 
-### Prerequisites
+### Prerequisiteghp_ujPTBdzJNSVjKtmHMvZOt1X1QlX3jC0Qlxo
 
 - Node.js and npm installed on your machine.
 
@@ -43,7 +43,7 @@ LatticeVisualizer is a React-based application for visualizing lattice points in
 
 ### Controls
 
-- **Dimension**: Use the input field to set the lattice dimension (2D or 3D).
+- **Dimension**: Use the input field to set the dimensions
 - **Sum Limit**: Set the range for the coefficients used in generating lattice points.
 - **Basis Vectors**: Modify the basis vectors to see how the lattice changes.
 - **Shade Parallelepiped**: Click the "Shade Parallelepiped" button to shade a random parallelepiped within the lattice.
