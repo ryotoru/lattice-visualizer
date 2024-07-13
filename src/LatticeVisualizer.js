@@ -4,26 +4,34 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import * as d3 from 'd3';
 import numeric from 'numeric';
 
-const MAX_POINTS = 50000;
+const MAX_POINTS = 5000000;
 
 const LatticeVisualizer = () => {
   const [dimension, setDimension] = useState(2);
-  const [basis, setBasis] = useState([
-    [1, 0],
-    [0, 1]
-  ]);
+  const [basis, setBasis] = useState(() => {
+    const initialBasis = [
+      [1, 0],
+      [0, 1]
+    ];
+    console.log('Initial basis:', initialBasis);
+    return initialBasis;
+  });
   const [sumLimit, setSumLimit] = useState(5);
   const [dualBasis, setDualBasis] = useState(null);
   const [shadeParallelepiped, setShadeParallelepiped] = useState(false);
   const [parallelepipedMesh, setParallelepipedMesh] = useState(null);
+  const [axesVisible, setAxesVisible] = useState(true);
   const canvasContainerRef = useRef(null);
   const rendererRef = useRef(new THREE.WebGLRenderer({ antialias: true }));
   const sceneRef = useRef(new THREE.Scene());
-  const cameraRef = useRef(new THREE.PerspectiveCamera(75, 1024 / 768, 0.1, 1000));
+  const cameraRef = useRef(new THREE.PerspectiveCamera(75, 1280 / 1024, 0.1, 1000));
+  const controlsRef = useRef(null);
+  const axesHelperRef = useRef(null);
+  const gridHelperRef = useRef(null);
 
   useEffect(() => {
     const renderer = rendererRef.current;
-    renderer.setSize(1024, 768);
+    renderer.setSize(1280, 1024);
 
     const camera = cameraRef.current;
     camera.position.z = 10;
@@ -33,9 +41,22 @@ const LatticeVisualizer = () => {
       canvasContainerRef.current.appendChild(canvas);
     }
 
+    const scene = sceneRef.current;
+    if (!axesHelperRef.current) {
+      const axesHelper = new THREE.AxesHelper(5);
+      const gridHelper = new THREE.GridHelper(100, 100);
+      scene.add(axesHelper);
+      scene.add(gridHelper);
+      axesHelperRef.current = axesHelper;
+      gridHelperRef.current = gridHelper;
+    }
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controlsRef.current = controls;
+
     const animate = () => {
       requestAnimationFrame(animate);
-      renderer.render(sceneRef.current, camera);
+      renderer.render(scene, camera);
     };
     animate();
   }, []);
@@ -49,7 +70,15 @@ const LatticeVisualizer = () => {
     } else if (dimension === 3) {
       render3DLattice(false);
     }
-  }, [dimension, basis, sumLimit, shadeParallelepiped, dualBasis]);
+    updateAxesVisibility();
+  }, [dimension, basis, sumLimit, shadeParallelepiped, dualBasis, axesVisible]);
+
+  const updateAxesVisibility = () => {
+    if (axesHelperRef.current && gridHelperRef.current) {
+      axesHelperRef.current.visible = axesVisible;
+      gridHelperRef.current.visible = axesVisible;
+    }
+  };
 
   const generateLatticePoints = (basisMatrix) => {
     const points = [];
@@ -67,6 +96,9 @@ const LatticeVisualizer = () => {
         }
       }
     }
+
+    console.log('Coefficients:', coefficients);
+    console.log('Basis Matrix:', basisMatrix);
 
     if (coefficients.length > MAX_POINTS) {
       alert(`Too many points (${coefficients.length}). Limiting to ${MAX_POINTS} points for visualization.`);
@@ -88,20 +120,35 @@ const LatticeVisualizer = () => {
 
   const calculateDualBasis = (basisMatrix) => {
     const basisMatrixT = numeric.transpose(basisMatrix);
-    const inverseBasisMatrixT = numeric.inv(basisMatrixT);
-    return numeric.transpose(inverseBasisMatrixT);
+    const product = numeric.dot(basisMatrixT, basisMatrix);
+    const inverse = numeric.inv(product);
+    return numeric.dot(basisMatrix, inverse);
   };
 
-  const points = useMemo(() => generateLatticePoints(basis), [dimension, basis, sumLimit]);
-  const dualPoints = useMemo(() => (dualBasis ? generateLatticePoints(dualBasis) : []), [dimension, dualBasis, sumLimit]);
+  const points = useMemo(() => {
+    if (!basis || !basis.length || !basis[0].length) {
+      console.error('Invalid basis:', basis);
+      return [];
+    }
+    console.log('Generating points with basis:', basis);
+    return generateLatticePoints(basis);
+  }, [dimension, basis, sumLimit]);
+
+  const dualPoints = useMemo(() => {
+    if (dualBasis) {
+      console.log('Generating dual points with basis:', dualBasis);
+      return generateLatticePoints(dualBasis);
+    }
+    return [];
+  }, [dimension, dualBasis, sumLimit]);
 
   const projectTo3D = (points) => points.map(point => [point[0] || 0, point[1] || 0, point[2] || 0]);
 
   const render2DLattice = () => {
     const svg = d3.select(canvasContainerRef.current).select('svg');
     svg.selectAll("*").remove();
-    const width = 1024;
-    const height = 768;
+    const width = 1280;
+    const height = 1024;
     const margin = 20;
 
     svg.attr("width", width).attr("height", height);
@@ -149,10 +196,13 @@ const LatticeVisualizer = () => {
     scene.add(pointCloud);
     scene.add(dualPointCloud);
 
-    const axesHelper = new THREE.AxesHelper(5);
-    scene.add(axesHelper);
+    // Re-add axes and grid helpers
+    if (axesHelperRef.current) scene.add(axesHelperRef.current);
+    if (gridHelperRef.current) scene.add(gridHelperRef.current);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
+    updateAxesVisibility();
+
+    const controls = controlsRef.current;
     controls.update();
   };
 
@@ -184,6 +234,9 @@ const LatticeVisualizer = () => {
     const newParallelepipedMesh = new THREE.Mesh(parallelepipedGeometry, parallelepipedMaterial);
     scene.add(newParallelepipedMesh);
     setParallelepipedMesh(newParallelepipedMesh);
+
+    // Ensure axes are still visible after shading
+    updateAxesVisibility();
   };
 
   const handleDimensionChange = (e) => {
@@ -203,6 +256,7 @@ const LatticeVisualizer = () => {
 
   const handleBasisChange = (i, j, value) => {
     const newBasis = basis.map((row, rowIndex) => row.map((col, colIndex) => (rowIndex === i && colIndex === j ? parseFloat(value) : col)));
+    console.log(`Basis change at [${i}, ${j}]:`, newBasis);
     setBasis(newBasis);
   };
 
@@ -218,11 +272,33 @@ const LatticeVisualizer = () => {
       setParallelepipedMesh(null);
       setShadeParallelepiped(false);
     }
+    updateAxesVisibility();
   };
 
   const handleDualBasis = () => {
+    if (basis.length !== dimension || basis[0].length !== dimension) {
+      console.log("Invalid basis provided. The basis should be a square matrix with dimensions equal to the original lattice dimension.");
+      return;
+    }
+
     const calculatedDualBasis = calculateDualBasis(basis);
     setDualBasis(calculatedDualBasis);
+  };
+
+  const handleShowOriginal = () => {
+    setDualBasis(null);
+  };
+
+  const handleReturnToZeroView = () => {
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    camera.position.set(10, 10, 10);
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
+    controls.update();
+  };
+
+  const handleToggleAxes = () => {
+    setAxesVisible(!axesVisible);
   };
 
   return (
@@ -230,13 +306,13 @@ const LatticeVisualizer = () => {
       <div>
         <label>
           Dimension:
-          <input type="number" min="2" max="400" value={dimension} onChange={handleDimensionChange} />
+          <input id="dimension" name="dimension" type="number" min="2" max="400" value={dimension} onChange={handleDimensionChange} />
         </label>
       </div>
       <div>
         <label>
           Sum Limit:
-          <input type="number" min="1" max="10" value={sumLimit} onChange={(e) => setSumLimit(parseInt(e.target.value))} />
+          <input id="sumLimit" name="sumLimit" type="number" min="1" max="10" value={sumLimit} onChange={(e) => setSumLimit(parseInt(e.target.value))} />
         </label>
       </div>
       <div>
@@ -244,7 +320,7 @@ const LatticeVisualizer = () => {
         {basis.map((vector, i) => (
           <div key={i}>
             {vector.map((value, j) => (
-              <input key={j} type="number" value={value} onChange={(e) => handleBasisChange(i, j, e.target.value)} style={{ width: '50px', marginRight: '5px' }} />
+              <input key={j} id={`basis-${i}-${j}`} name={`basis-${i}-${j}`} type="number" value={value} onChange={(e) => handleBasisChange(i, j, e.target.value)} style={{ width: '50px', marginRight: '5px' }} />
             ))}
           </div>
         ))}
@@ -252,15 +328,25 @@ const LatticeVisualizer = () => {
       <button onClick={handleShadeParallelepiped}>Shade Parallelepiped</button>
       <button onClick={handleUnshadeParallelepiped}>Unshade Parallelepiped</button>
       <button onClick={handleDualBasis}>Dual</button>
-      <div style={{ width: '1024px', height: '768px' }} ref={canvasContainerRef}>
-        {dimension === 2 && <svg></svg>}
-        {dimension > 2 && <canvas></canvas>}
+      <button onClick={handleShowOriginal}>Show Original</button>
+      <button onClick={handleReturnToZeroView}>Return to Zero View</button>
+      <button onClick={handleToggleAxes}>{axesVisible ? 'Hide Axes' : 'Show Axes'}</button>
+      <div style={{ width: '1280px', height: '1024px' }} ref={canvasContainerRef}>
+      {dimension === 2 && <svg></svg>}
+      {dimension > 2 && <canvas></canvas>}
       </div>
     </div>
   );
 };
 
 export default LatticeVisualizer;
+
+
+
+
+
+
+
 
 
 
