@@ -1,20 +1,13 @@
 {
   "files": {
-    "main.css": "/lattice-visualizer/static/css/main.6dea0f05.chunk.css",
-    "main.js": "/lattice-visualizer/static/js/main.1ed14017.chunk.js",
-    "main.js.map": "/lattice-visualizer/static/js/main.1ed14017.chunk.js.map",
-    "runtime-main.js": "/lattice-visualizer/static/js/runtime-main.2551608d.js",
-    "runtime-main.js.map": "/lattice-visualizer/static/js/runtime-main.2551608d.js.map",
-    "static/js/2.c61a74b0.chunk.js": "/lattice-visualizer/static/js/2.c61a74b0.chunk.js",
-    "static/js/2.c61a74b0.chunk.js.map": "/lattice-visualizer/static/js/2.c61a74b0.chunk.js.map",
+    "main.css": "/lattice-visualizer/static/css/main.e6c13ad2.css",
+    "main.js": "/lattice-visualizer/static/js/main.316d9ce6.js",
     "index.html": "/lattice-visualizer/index.html",
-    "static/css/main.6dea0f05.chunk.css.map": "/lattice-visualizer/static/css/main.6dea0f05.chunk.css.map",
-    "static/js/2.c61a74b0.chunk.js.LICENSE.txt": "/lattice-visualizer/static/js/2.c61a74b0.chunk.js.LICENSE.txt"
+    "main.e6c13ad2.css.map": "/lattice-visualizer/static/css/main.e6c13ad2.css.map",
+    "main.316d9ce6.js.map": "/lattice-visualizer/static/js/main.316d9ce6.js.map"
   },
   "entrypoints": [
-    "static/js/runtime-main.2551608d.js",
-    "static/js/2.c61a74b0.chunk.js",
-    "static/css/main.6dea0f05.chunk.css",
-    "static/js/main.1ed14017.chunk.js"
+    "static/css/main.e6c13ad2.css",
+    "static/js/main.316d9ce6.js"
   ]
 }
