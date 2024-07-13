@@ -25,14 +25,14 @@ const LatticeVisualizer = () => {
   const canvasContainerRef = useRef(null);
   const rendererRef = useRef(new THREE.WebGLRenderer({ antialias: true }));
   const sceneRef = useRef(new THREE.Scene());
-  const cameraRef = useRef(new THREE.PerspectiveCamera(75, 1280 / 1024, 0.1, 1000));
+  const cameraRef = useRef(new THREE.PerspectiveCamera(75, 1920 / 1024, 0.1, 1000));
   const controlsRef = useRef(null);
   const axesHelperRef = useRef(null);
   const gridHelperRef = useRef(null);
 
   useEffect(() => {
     const renderer = rendererRef.current;
-    renderer.setSize(1280, 1024);
+    renderer.setSize(1920, 1024);
 
     const camera = cameraRef.current;
     camera.position.z = 10;
@@ -108,7 +108,7 @@ const LatticeVisualizer = () => {
 
     for (const coeff of coefficients) {
       const point = new Array(dimension).fill(0);
-      for (let i = 0; i < dimension; i++) {
+      for (let i = 0; i < dimension; i++) {  // Corrected this line
         for (let j = 0; j < dimension; j++) {
           point[j] += coeff[i] * basisMatrix[i][j];
         }
@@ -148,8 +148,8 @@ const LatticeVisualizer = () => {
   const render2DLattice = () => {
     const svg = d3.select(canvasContainerRef.current).select('svg');
     svg.selectAll("*").remove();
-    const width = isFullscreen ? window.innerWidth : 1280;
-    const height = isFullscreen ? window.innerHeight : 1024;
+    const width = isFullscreen ? 1920 : 1280;
+    const height = isFullscreen ? 1080 : 1024;
     const margin = 20;
 
     svg.attr("width", width).attr("height", height);
@@ -212,33 +212,30 @@ const LatticeVisualizer = () => {
     if (parallelepipedMesh) {
       scene.remove(parallelepipedMesh);
     }
-
-    const randomOffsets = Array.from({ length: dimension }, () => Math.floor(Math.random() * (2 * sumLimit + 1)) - sumLimit);
+  
     const parallelepipedVertices = [];
-
+  
     for (let i = 0; i < (1 << dimension); i++) {
       const vertex = new Array(dimension).fill(0);
       for (let j = 0; j < dimension; j++) {
-        vertex[j] = randomOffsets[j];
-        if (i & (1 << j)) {
-          for (let k = 0; k < dimension; k++) {
-            vertex[k] += basis[j][k];
-          }
+        const a_i = (i & (1 << j)) ? Math.random() : 0; // Random coefficient in [0, 1)
+        for (let k = 0; k < dimension; k++) {
+          vertex[k] += a_i * basis[j][k];
         }
       }
       parallelepipedVertices.push(...vertex.slice(0, 3)); // Use the first three dimensions
     }
-
+  
     const parallelepipedGeometry = new THREE.BufferGeometry();
     parallelepipedGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(parallelepipedVertices), 3));
     const parallelepipedMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, opacity: 0.5, transparent: true });
     const newParallelepipedMesh = new THREE.Mesh(parallelepipedGeometry, parallelepipedMaterial);
     scene.add(newParallelepipedMesh);
     setParallelepipedMesh(newParallelepipedMesh);
-
-    // Ensure axes are still visible after shading
+  
     updateAxesVisibility();
   };
+  
 
   const handleDimensionChange = (e) => {
     const newDimension = parseInt(e.target.value);
@@ -378,7 +375,7 @@ const LatticeVisualizer = () => {
       <button onClick={toggleFullscreen}>{isFullscreen ? 'Exit Fullscreen' : 'Go Fullscreen'}</button>
       <div 
         style={{ 
-          width: isFullscreen ? '100vw' : '1280px', 
+          width: isFullscreen ? '100vw' : '1920px', 
           height: isFullscreen ? '100vh' : '1024px' 
         }} 
         ref={canvasContainerRef}
@@ -391,4 +388,5 @@ const LatticeVisualizer = () => {
 };
 
 export default LatticeVisualizer;
+
 
