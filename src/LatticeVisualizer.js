@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import * as d3 from 'd3';
 import numeric from 'numeric';
 
-const MAX_POINTS = 500000000;
+const MAX_POINTS = 50000000;
 
 const LatticeVisualizer = () => {
   const [dimension, setDimension] = useState(2);
@@ -22,17 +22,19 @@ const LatticeVisualizer = () => {
   const [parallelepipedMesh, setParallelepipedMesh] = useState(null);
   const [axesVisible, setAxesVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [pointCount, setPointCount] = useState(0);
+  const [totalPointsGenerated, setTotalPointsGenerated] = useState(0);
   const canvasContainerRef = useRef(null);
   const rendererRef = useRef(new THREE.WebGLRenderer({ antialias: true }));
   const sceneRef = useRef(new THREE.Scene());
-  const cameraRef = useRef(new THREE.PerspectiveCamera(75, 1920 / 1024, 0.1, 1000));
+  const cameraRef = useRef(new THREE.PerspectiveCamera(75, 1920 / 1080, 0.1, 1000));
   const controlsRef = useRef(null);
   const axesHelperRef = useRef(null);
   const gridHelperRef = useRef(null);
 
   useEffect(() => {
     const renderer = rendererRef.current;
-    renderer.setSize(1920, 1024);
+    renderer.setSize(1920, 1080);
 
     const camera = cameraRef.current;
     camera.position.z = 10;
@@ -101,14 +103,16 @@ const LatticeVisualizer = () => {
     console.log('Coefficients:', coefficients);
     console.log('Basis Matrix:', basisMatrix);
 
+    let pointLimitExceeded = false;
+    setTotalPointsGenerated(coefficients.length);
     if (coefficients.length > MAX_POINTS) {
-      alert(`Too many points (${coefficients.length}). Limiting to ${MAX_POINTS} points for visualization.`);
+      pointLimitExceeded = true;
       coefficients.length = MAX_POINTS;
     }
 
     for (const coeff of coefficients) {
       const point = new Array(dimension).fill(0);
-      for (let i = 0; i < dimension; i++) {  // Corrected this line
+      for (let i = 0; i < dimension; i++) {
         for (let j = 0; j < dimension; j++) {
           point[j] += coeff[i] * basisMatrix[i][j];
         }
@@ -116,6 +120,7 @@ const LatticeVisualizer = () => {
       points.push(point);
     }
 
+    setPointCount(points.length);
     return points;
   };
 
@@ -344,49 +349,67 @@ const LatticeVisualizer = () => {
 
   return (
     <div>
-      <div>
-        <label>
-          Dimension:
-          <input id="dimension" name="dimension" type="number" min="2" max="400" value={dimension} onChange={handleDimensionChange} />
-        </label>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div>
+          <label>
+            Dimension:
+            <input id="dimension" name="dimension" type="number" min="2" max="400" value={dimension} onChange={handleDimensionChange} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Sum Limit:
+            <input id="sumLimit" name="sumLimit" type="number" min="1" max="10" value={sumLimit} onChange={(e) => setSumLimit(parseInt(e.target.value))} />
+          </label>
+        </div>
+        <div style={{ marginLeft: '20px' }}>
+          <h3>Basis Vectors:</h3>
+          {basis.map((vector, i) => (
+            <div key={i} style={{ display: 'flex', marginBottom: '5px' }}>
+              {vector.map((value, j) => (
+                <input key={j} id={`basis-${i}-${j}`} name={`basis-${i}-${j}`} type="number" value={value} onChange={(e) => handleBasisChange(i, j, e.target.value)} style={{ width: '50px', marginRight: '5px' }} />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
-      <div>
-        <label>
-          Sum Limit:
-          <input id="sumLimit" name="sumLimit" type="number" min="1" max="10" value={sumLimit} onChange={(e) => setSumLimit(parseInt(e.target.value))} />
-        </label>
+      <div style={{ marginTop: '10px' }}>
+        <button onClick={handleShadeParallelepiped}>Shade Parallelepiped</button>
+        <button onClick={handleUnshadeParallelepiped}>Unshade Parallelepiped</button>
+        <button onClick={handleDualBasis}>Dual</button>
+        <button onClick={handleShowOriginal}>Show Original</button>
+        <button onClick={handleReturnToZeroView}>Return to Zero View</button>
+        <button onClick={handleToggleAxes}>{axesVisible ? 'Hide Axes' : 'Show Axes'}</button>
+        <button onClick={toggleFullscreen}>{isFullscreen ? 'Exit Fullscreen' : 'Go Fullscreen'}</button>
       </div>
-      <div>
-        <h3>Basis Vectors:</h3>
-        {basis.map((vector, i) => (
-          <div key={i}>
-            {vector.map((value, j) => (
-              <input key={j} id={`basis-${i}-${j}`} name={`basis-${i}-${j}`} type="number" value={value} onChange={(e) => handleBasisChange(i, j, e.target.value)} style={{ width: '50px', marginRight: '5px' }} />
-            ))}
-          </div>
-        ))}
-      </div>
-      <button onClick={handleShadeParallelepiped}>Shade Parallelepiped</button>
-      <button onClick={handleUnshadeParallelepiped}>Unshade Parallelepiped</button>
-      <button onClick={handleDualBasis}>Dual</button>
-      <button onClick={handleShowOriginal}>Show Original</button>
-      <button onClick={handleReturnToZeroView}>Return to Zero View</button>
-      <button onClick={handleToggleAxes}>{axesVisible ? 'Hide Axes' : 'Show Axes'}</button>
-      <button onClick={toggleFullscreen}>{isFullscreen ? 'Exit Fullscreen' : 'Go Fullscreen'}</button>
       <div 
         style={{ 
           width: isFullscreen ? '100vw' : '1920px', 
-          height: isFullscreen ? '100vh' : '1024px' 
+          height: isFullscreen ? '100vh' : '1080px' 
         }} 
         ref={canvasContainerRef}
       >
         {dimension === 2 && <svg></svg>}
         {dimension > 2 && <canvas></canvas>}
       </div>
+      <div id="info-board" style={{
+        position: 'fixed',
+        bottom: '10px',
+        right: '10px',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        padding: '10px',
+        borderRadius: '5px',
+        zIndex: 1000,
+        fontSize: '14px'
+      }}>
+        Total Points Generated: {totalPointsGenerated} <br />
+        Points Displayed: {pointCount} {totalPointsGenerated > MAX_POINTS && <span>(Showing only {MAX_POINTS})</span>}
+      </div>
     </div>
   );
 };
 
 export default LatticeVisualizer;
+
 
 
