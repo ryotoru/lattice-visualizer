@@ -27,14 +27,14 @@ const LatticeVisualizer = () => {
   const canvasContainerRef = useRef(null);
   const rendererRef = useRef(new THREE.WebGLRenderer({ antialias: true }));
   const sceneRef = useRef(new THREE.Scene());
-  const cameraRef = useRef(new THREE.PerspectiveCamera(75, 1920 / 1080, 0.1, 1000));
+  const cameraRef = useRef(new THREE.PerspectiveCamera(75, 1280 / 720, 0.1, 1000));
   const controlsRef = useRef(null);
   const axesHelperRef = useRef(null);
   const gridHelperRef = useRef(null);
 
   useEffect(() => {
     const renderer = rendererRef.current;
-    renderer.setSize(1920, 1080);
+    renderer.setSize(1280, 720);
 
     const camera = cameraRef.current;
     camera.position.z = 10;
